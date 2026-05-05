@@ -1,3 +1,4 @@
+import { createHmac, timingSafeEqual } from 'crypto'
 import type { VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField } from '../types.js'
 import { GitHubProvider } from './provider.js'
 
@@ -84,15 +85,16 @@ export class GitHubPlugin implements VcsPlugin {
     return null
   }
 
-  validateWebhookAuth(headers: Record<string, string | undefined>, secret: string): boolean {
+  validateWebhookAuth(headers: Record<string, string | undefined>, secret: string, rawBody?: string): boolean {
     const signature = headers[this.webhookAuthHeader]
-    if (!signature) return false
+    if (!signature || !rawBody) return false
 
-    // For full HMAC verification the server would need crypto;
-    // for now we do a constant-time comparison of the raw secret
-    // which is sufficient when the secret itself is the signature.
-    // Production deployments should use HMAC-SHA256 verification.
-    return signature === secret
+    const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex')
+    try {
+      return timingSafeEqual(Buffer.from(signature), Buffer.from(expected))
+    } catch {
+      return false
+    }
   }
 
   private parsePr(p: PrPayload): WebhookEvent | null {

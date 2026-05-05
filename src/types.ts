@@ -102,5 +102,5 @@ export interface VcsPlugin {
 
   createProvider(config: VcsPluginConfig): VcsProvider
   parseWebhookPayload(body: unknown): WebhookEvent | null
-  validateWebhookAuth(headers: Record<string, string | undefined>, secret: string): boolean
+  validateWebhookAuth(headers: Record<string, string | undefined>, secret: string, rawBody?: string): boolean
 }
