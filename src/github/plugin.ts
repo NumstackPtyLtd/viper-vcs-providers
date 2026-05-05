@@ -41,14 +41,21 @@ export class GitHubPlugin implements VcsPlugin {
   readonly webhookAuthHeader = 'x-hub-signature-256'
 
   readonly configSchema: ConfigField[] = [
-    { name: 'token', label: 'Personal Access Token', type: 'password', required: true },
-    { name: 'url', label: 'API URL', type: 'url', required: true, placeholder: 'https://api.github.com' },
+    { name: 'app_id', label: 'App ID', type: 'text', required: true, helpText: 'GitHub > Settings > Developer settings > GitHub Apps. The numeric App ID shown on the app page.' },
+    { name: 'private_key', label: 'Private Key (PEM)', type: 'textarea', required: true, placeholder: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA...\n-----END RSA PRIVATE KEY-----', helpText: 'Generate a private key on the GitHub App page. Paste the full contents of the .pem file.' },
+    { name: 'installation_id', label: 'Installation ID', type: 'text', required: true, helpText: 'Install the app on your org/repo. The installation ID is in the URL: github.com/settings/installations/{id}.' },
+    { name: 'url', label: 'API URL', type: 'url', required: true, defaultValue: 'https://api.github.com', helpText: 'Only change for GitHub Enterprise Server.', advanced: true },
   ]
 
   private provider: GitHubProvider | null = null
 
   createProvider(config: VcsPluginConfig): VcsProvider {
-    this.provider = new GitHubProvider(config.token, config.url)
+    this.provider = new GitHubProvider(
+      config.app_id,
+      config.private_key,
+      config.installation_id,
+      config.url || 'https://api.github.com'
+    )
     return this.provider
   }
 

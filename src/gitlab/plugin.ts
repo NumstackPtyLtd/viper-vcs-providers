@@ -24,8 +24,8 @@ export class GitLabPlugin implements VcsPlugin {
   readonly webhookAuthHeader = 'x-gitlab-token'
 
   readonly configSchema: ConfigField[] = [
-    { name: 'token', label: 'Private Token', type: 'password', required: true },
-    { name: 'url', label: 'Instance URL', type: 'url', required: true },
+    { name: 'token', label: 'Personal Access Token', type: 'password', required: true, helpText: 'GitLab > Settings > Access Tokens. Needs api scope.' },
+    { name: 'url', label: 'Instance URL', type: 'url', required: true, defaultValue: 'https://gitlab.com', helpText: 'Only change for self-hosted GitLab.', advanced: true },
   ]
 
   createProvider(config: VcsPluginConfig): VcsProvider {

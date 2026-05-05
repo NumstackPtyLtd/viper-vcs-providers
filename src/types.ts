@@ -76,19 +76,20 @@ export interface WebhookEvent {
   }
 }
 
-/** Configuration for creating a VCS provider instance. */
-export interface VcsPluginConfig {
-  token: string
-  url: string
-}
+/** Configuration for creating a VCS provider instance. Keys match configSchema field names. */
+export type VcsPluginConfig = Record<string, string>
 
 /** Configuration schema field for settings forms. */
 export interface ConfigField {
   name: string
   label: string
-  type: 'text' | 'password' | 'url'
+  type: 'text' | 'password' | 'url' | 'textarea'
   required: boolean
   placeholder?: string
+  defaultValue?: string
+  helpText?: string
+  /** If true, field is hidden by default (advanced/self-hosted). */
+  advanced?: boolean
 }
 
 /** VCS Plugin — the contract every VCS provider must implement. */
