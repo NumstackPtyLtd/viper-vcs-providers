@@ -9,9 +9,12 @@ export { registry } from './registry.js'
 
 // Plugins (exported for direct use / testing)
 export { gitlabPlugin } from './gitlab/plugin.js'
+export { githubPlugin } from './github/plugin.js'
 
 // Auto-register all built-in plugins
 import { registry } from './registry.js'
 import { gitlabPlugin } from './gitlab/plugin.js'
+import { githubPlugin } from './github/plugin.js'
 
 registry.register(gitlabPlugin)
+registry.register(githubPlugin)
