@@ -121,6 +121,12 @@ export interface OAuthCallbackResult {
   account: string
 }
 
+/** An existing installation of the app. */
+export interface OAuthInstallation {
+  installationId: string
+  account: string
+}
+
 /** OAuth-capable VCS plugin. Extends VcsPlugin with install/callback/repo-listing. */
 export interface OAuthPlugin extends VcsPlugin {
   readonly supportsOAuth: true
@@ -133,6 +139,9 @@ export interface OAuthPlugin extends VcsPlugin {
 
   /** Process the redirect params after the user authorises. */
   handleCallback(params: Record<string, string>): Promise<OAuthCallbackResult>
+
+  /** List existing installations of this app. */
+  listInstallations(): Promise<OAuthInstallation[]>
 
   /** List repos accessible to an installation. */
   listInstallationRepos(installationId: string): Promise<OAuthRepo[]>

@@ -2,7 +2,7 @@
 export type {
   VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField,
   DiffFile, DiffVersion, Discussion, DiscussionNote, InlineCommentPosition,
-  OAuthPlugin, OAuthRepo, OAuthCallbackResult,
+  OAuthPlugin, OAuthRepo, OAuthCallbackResult, OAuthInstallation,
 } from './types.js'
 export { isOAuthPlugin } from './types.js'
 

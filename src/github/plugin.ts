@@ -1,5 +1,5 @@
 import { createHmac, createSign, timingSafeEqual } from 'crypto'
-import type { VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField, OAuthPlugin, OAuthRepo, OAuthCallbackResult } from '../types.js'
+import type { VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField, OAuthPlugin, OAuthRepo, OAuthCallbackResult, OAuthInstallation } from '../types.js'
 import { GitHubProvider } from './provider.js'
 
 interface PrPayload {
@@ -83,6 +83,21 @@ export class GitHubPlugin implements OAuthPlugin {
 
     const { account } = await this.fetchInstallation(installationId)
     return { installationId, account }
+  }
+
+  async listInstallations(): Promise<OAuthInstallation[]> {
+    if (!this.oauthAppId || !this.oauthPrivateKey) throw new Error('OAuth not configured')
+    const jwt = this.signOAuthJwt()
+    const res = await fetch(`${this.oauthBaseUrl}/app/installations`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    })
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`)
+    const data = await res.json() as Array<{ id: number; account: { login: string } }>
+    return data.map((i) => ({ installationId: String(i.id), account: i.account.login }))
   }
 
   async listInstallationRepos(installationId: string): Promise<OAuthRepo[]> {

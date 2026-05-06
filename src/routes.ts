@@ -22,8 +22,10 @@ export interface OAuthRouteDeps {
   onConnection: (orgId: string, provider: string, result: OAuthCallbackResult) => Promise<void> | void
   /** Called when repos are selected. Store the projects. */
   onRepos?: (orgId: string, provider: string, installationId: string, repos: OAuthRepo[]) => Promise<void> | void
-  /** Base URL for building callback URLs. */
+  /** Base URL of the API server for building callback URLs. */
   baseUrl?: string
+  /** Base URL of the dashboard for post-auth redirects. */
+  dashboardUrl?: string
 }
 
 export function createOAuthRoutes(deps: OAuthRouteDeps): Hono {
@@ -64,9 +66,32 @@ export function createOAuthRoutes(deps: OAuthRouteDeps): Hono {
     const orgId = deps.getOrgId()
     await deps.onConnection(orgId, plugin.type, result)
 
-    // Redirect to setup page with success params
-    const dashboardUrl = c.req.header('origin') || ''
-    return c.redirect(`${dashboardUrl}/setup?provider=${plugin.type}&installation_id=${result.installationId}&account=${result.account}`)
+    // Post result to opener window and close the popup.
+    // Falls back to redirect if not opened as popup.
+    const msg = JSON.stringify({
+      type: 'viper:oauth',
+      provider: plugin.type,
+      installationId: result.installationId,
+      account: result.account,
+    })
+    const fallback = `${deps.dashboardUrl || ''}/setup?provider=${plugin.type}&installation_id=${result.installationId}&account=${encodeURIComponent(result.account)}`
+    return c.html([
+      '<!DOCTYPE html><html><body><script>',
+      `var msg = ${msg};`,
+      'if (window.opener) { window.opener.postMessage(msg, "*"); window.close(); }',
+      `else { window.location.href = ${JSON.stringify(fallback)}; }`,
+      '</script></body></html>',
+    ].join('\n'))
+  })
+
+  // List existing installations for a provider
+  app.get('/api/vcs/oauth/:type/installations', async (c) => {
+    const plugin = deps.registry.get(c.req.param('type'))
+    if (!isOAuthPlugin(plugin)) {
+      return c.json({ error: 'Provider does not support OAuth' }, 400)
+    }
+    const installations = await plugin.listInstallations()
+    return c.json({ installations })
   })
 
   // List repos for an installation
