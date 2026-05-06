@@ -1,5 +1,5 @@
-import { createHmac, timingSafeEqual } from 'crypto'
-import type { VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField } from '../types.js'
+import { createHmac, createSign, timingSafeEqual } from 'crypto'
+import type { VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField, OAuthPlugin, OAuthRepo, OAuthCallbackResult } from '../types.js'
 import { GitHubProvider } from './provider.js'
 
 interface PrPayload {
@@ -35,11 +35,12 @@ interface IssueCommentPayload {
   repository: { id: number; full_name: string }
 }
 
-export class GitHubPlugin implements VcsPlugin {
+export class GitHubPlugin implements OAuthPlugin {
   readonly type = 'github'
   readonly name = 'GitHub'
   readonly description = 'GitHub pull request reviews via webhooks'
   readonly webhookAuthHeader = 'x-hub-signature-256'
+  readonly supportsOAuth = true as const
 
   readonly configSchema: ConfigField[] = [
     { name: 'app_id', label: 'App ID', type: 'text', required: true, helpText: 'GitHub > Settings > Developer settings > GitHub Apps. The numeric App ID shown on the app page.' },
@@ -49,6 +50,10 @@ export class GitHubPlugin implements VcsPlugin {
   ]
 
   private provider: GitHubProvider | null = null
+  private oauthAppId: string | null = null
+  private oauthPrivateKey: string | null = null
+  private oauthAppSlug: string | null = null
+  private oauthBaseUrl = 'https://api.github.com'
 
   createProvider(config: VcsPluginConfig): VcsProvider {
     this.provider = new GitHubProvider(
@@ -58,6 +63,88 @@ export class GitHubPlugin implements VcsPlugin {
       config.url || 'https://api.github.com'
     )
     return this.provider
+  }
+
+  configureOAuth(config: Record<string, string>): void {
+    this.oauthAppId = config.app_id
+    this.oauthPrivateKey = config.private_key
+    this.oauthAppSlug = config.app_slug ?? null
+    this.oauthBaseUrl = config.url || 'https://api.github.com'
+  }
+
+  getInstallUrl(_callbackUrl: string): string {
+    if (!this.oauthAppSlug) throw new Error('GitHub App slug not configured. Call configureOAuth first.')
+    return `https://github.com/apps/${this.oauthAppSlug}/installations/new`
+  }
+
+  async handleCallback(params: Record<string, string>): Promise<OAuthCallbackResult> {
+    const installationId = params.installation_id
+    if (!installationId) throw new Error('Missing installation_id parameter')
+
+    const { account } = await this.fetchInstallation(installationId)
+    return { installationId, account }
+  }
+
+  async listInstallationRepos(installationId: string): Promise<OAuthRepo[]> {
+    const token = await this.getOAuthInstallationToken(installationId)
+    const res = await fetch(`${this.oauthBaseUrl}/installation/repositories?per_page=100`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    })
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`)
+    const data = await res.json() as { repositories: Array<{ id: number; name: string; full_name: string; default_branch: string; language: string | null; private: boolean }> }
+    return data.repositories.map((r) => ({
+      id: r.id,
+      name: r.name,
+      fullName: r.full_name,
+      defaultBranch: r.default_branch,
+      language: r.language,
+      private: r.private,
+    }))
+  }
+
+  private async fetchInstallation(installationId: string): Promise<{ account: string }> {
+    if (!this.oauthAppId || !this.oauthPrivateKey) throw new Error('OAuth not configured')
+    const jwt = this.signOAuthJwt()
+    const res = await fetch(`${this.oauthBaseUrl}/app/installations/${installationId}`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    })
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`)
+    const data = await res.json() as { account: { login: string } }
+    return { account: data.account.login }
+  }
+
+  private async getOAuthInstallationToken(installationId: string): Promise<string> {
+    if (!this.oauthAppId || !this.oauthPrivateKey) throw new Error('OAuth not configured')
+    const jwt = this.signOAuthJwt()
+    const res = await fetch(`${this.oauthBaseUrl}/app/installations/${installationId}/access_tokens`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    })
+    if (!res.ok) throw new Error(`GitHub API ${res.status}: ${await res.text()}`)
+    const data = await res.json() as { token: string }
+    return data.token
+  }
+
+  private signOAuthJwt(): string {
+    const now = Math.floor(Date.now() / 1000)
+    const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url')
+    const payload = Buffer.from(JSON.stringify({ iat: now - 60, exp: now + 600, iss: this.oauthAppId })).toString('base64url')
+    const sign = createSign('RSA-SHA256')
+    sign.update(`${header}.${payload}`)
+    const signature = sign.sign(this.oauthPrivateKey!, 'base64url')
+    return `${header}.${payload}.${signature}`
   }
 
   parseWebhookPayload(body: unknown): WebhookEvent | null {

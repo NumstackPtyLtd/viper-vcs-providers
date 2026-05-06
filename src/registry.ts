@@ -3,7 +3,7 @@ import type { VcsPlugin } from './types.js'
 
 const log = pino({ name: 'vcs-registry' })
 
-class PluginRegistry {
+export class PluginRegistry {
   readonly plugins = new Map<string, VcsPlugin>()
 
   register(plugin: VcsPlugin): void {
