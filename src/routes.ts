@@ -94,6 +94,24 @@ export function createOAuthRoutes(deps: OAuthRouteDeps): Hono {
     return c.json({ installations })
   })
 
+  // Connect an existing installation (store the connection without going through OAuth redirect)
+  app.post('/api/vcs/oauth/:type/connect', async (c) => {
+    const plugin = deps.registry.get(c.req.param('type'))
+    if (!isOAuthPlugin(plugin)) {
+      return c.json({ error: 'Provider does not support OAuth' }, 400)
+    }
+
+    const body = await c.req.json() as { installation_id: string }
+    if (!body.installation_id) {
+      return c.json({ error: 'installation_id required' }, 400)
+    }
+
+    const result = await plugin.handleCallback({ installation_id: body.installation_id })
+    const orgId = deps.getOrgId()
+    await deps.onConnection(orgId, plugin.type, result)
+    return c.json({ status: 'ok', account: result.account })
+  })
+
   // List repos for an installation
   app.get('/api/vcs/oauth/:type/repos', async (c) => {
     const plugin = deps.registry.get(c.req.param('type'))
