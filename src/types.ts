@@ -41,6 +41,25 @@ export interface InlineCommentPosition {
   line: number
 }
 
+/** Check run conclusion — determines merge gating. */
+export type CheckConclusion = 'success' | 'failure' | 'neutral'
+
+/** Check run parameters. */
+export interface CheckRunParams {
+  /** Commit SHA to attach the check to. */
+  sha: string
+  /** Status: in_progress while reviewing, completed when done. */
+  status: 'in_progress' | 'completed'
+  /** Only required when status is completed. */
+  conclusion?: CheckConclusion
+  /** Title shown in the checks UI. */
+  title: string
+  /** Summary text (markdown supported). */
+  summary: string
+  /** Optional URL for "Details" link. */
+  detailsUrl?: string
+}
+
 /** VCS provider operations — the contract adapters implement. */
 export interface VcsProvider {
   getMergeRequestDiff(projectId: number, mrIid: number): Promise<DiffFile[]>
@@ -51,6 +70,8 @@ export interface VcsProvider {
   replyToDiscussion(projectId: number, mrIid: number, discussionId: string, body: string): Promise<void>
   resolveDiscussion(projectId: number, mrIid: number, discussionId: string, resolved: boolean): Promise<void>
   getFileContent(projectId: number, filePath: string, ref: string): Promise<string | null>
+  /** Create or update a check run on a commit. Used for merge gating. */
+  createCheckRun(projectId: number, params: CheckRunParams): Promise<void>
 }
 
 /** Normalized webhook event — VCS-agnostic. */
@@ -63,6 +84,7 @@ export interface WebhookEvent {
     description: string | null
     sourceBranch: string
     targetBranch: string
+    headSha: string
     action: string
     authorId: number
   }

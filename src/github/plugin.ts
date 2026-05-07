@@ -8,7 +8,7 @@ interface PrPayload {
   pull_request: {
     title: string
     body: string | null
-    head: { ref: string }
+    head: { ref: string; sha: string }
     base: { ref: string }
     user: { id: number }
   }
@@ -217,6 +217,7 @@ export class GitHubPlugin implements OAuthPlugin {
         description: p.pull_request.body,
         sourceBranch: p.pull_request.head.ref,
         targetBranch: p.pull_request.base.ref,
+        headSha: p.pull_request.head.sha,
         action,
         authorId: p.pull_request.user.id,
       },
