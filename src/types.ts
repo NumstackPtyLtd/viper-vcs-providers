@@ -104,3 +104,50 @@ export interface VcsPlugin {
   parseWebhookPayload(body: unknown): WebhookEvent | null
   validateWebhookAuth(headers: Record<string, string | undefined>, secret: string, rawBody?: string): boolean
 }
+
+/** A repo returned from an OAuth installation. */
+export interface OAuthRepo {
+  id: number
+  name: string
+  fullName: string
+  defaultBranch: string
+  language: string | null
+  private: boolean
+}
+
+/** Result from handling an OAuth callback. */
+export interface OAuthCallbackResult {
+  installationId: string
+  account: string
+}
+
+/** An existing installation of the app. */
+export interface OAuthInstallation {
+  installationId: string
+  account: string
+}
+
+/** OAuth-capable VCS plugin. Extends VcsPlugin with install/callback/repo-listing. */
+export interface OAuthPlugin extends VcsPlugin {
+  readonly supportsOAuth: true
+
+  /** Initialise with platform credentials (app ID, private key, etc.). */
+  configureOAuth(config: Record<string, string>): void
+
+  /** URL the user should visit to authorise/install the app. */
+  getInstallUrl(callbackUrl: string): string
+
+  /** Process the redirect params after the user authorises. */
+  handleCallback(params: Record<string, string>): Promise<OAuthCallbackResult>
+
+  /** List existing installations of this app. */
+  listInstallations(): Promise<OAuthInstallation[]>
+
+  /** List repos accessible to an installation. */
+  listInstallationRepos(installationId: string): Promise<OAuthRepo[]>
+}
+
+/** Type guard for OAuthPlugin. */
+export function isOAuthPlugin(plugin: VcsPlugin): plugin is OAuthPlugin {
+  return 'supportsOAuth' in plugin && (plugin as OAuthPlugin).supportsOAuth === true
+}

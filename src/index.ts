@@ -2,10 +2,16 @@
 export type {
   VcsPlugin, VcsPluginConfig, VcsProvider, WebhookEvent, ConfigField,
   DiffFile, DiffVersion, Discussion, DiscussionNote, InlineCommentPosition,
+  OAuthPlugin, OAuthRepo, OAuthCallbackResult, OAuthInstallation,
 } from './types.js'
+export { isOAuthPlugin } from './types.js'
 
 // Registry
-export { registry } from './registry.js'
+export { registry, PluginRegistry } from './registry.js'
+
+// Routes
+export { createOAuthRoutes } from './routes.js'
+export type { OAuthRouteDeps } from './routes.js'
 
 // Plugins (exported for direct use / testing)
 export { gitlabPlugin } from './gitlab/plugin.js'
