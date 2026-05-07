@@ -1,6 +1,6 @@
 import { createSign } from 'crypto'
 import pino from 'pino'
-import type { VcsProvider, DiffFile, DiffVersion, Discussion, InlineCommentPosition } from '../types.js'
+import type { VcsProvider, DiffFile, DiffVersion, Discussion, InlineCommentPosition, CheckRunParams } from '../types.js'
 
 const log = pino({ name: 'github' })
 
@@ -98,6 +98,29 @@ export class GitHubProvider implements VcsProvider {
     } catch {
       return null
     }
+  }
+
+  async createCheckRun(projectId: number, params: CheckRunParams): Promise<void> {
+    const repo = await this.resolveRepo(projectId)
+    const body: Record<string, unknown> = {
+      name: 'Viper Review',
+      head_sha: params.sha,
+      status: params.status,
+      output: {
+        title: params.title,
+        summary: params.summary,
+      },
+    }
+    if (params.status === 'completed' && params.conclusion) {
+      body.conclusion = params.conclusion
+    }
+    if (params.detailsUrl) {
+      body.details_url = params.detailsUrl
+    }
+    await this.request(`/repos/${repo}/check-runs`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
   }
 
   // --- Repo cache ---

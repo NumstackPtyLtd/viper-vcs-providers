@@ -7,6 +7,7 @@ interface MrPayload {
   object_attributes: {
     iid: number; title: string; description: string | null
     source_branch: string; target_branch: string; action?: string; author_id: number
+    last_commit?: { id: string }
   }
 }
 
@@ -50,7 +51,7 @@ export class GitLabPlugin implements VcsPlugin {
       kind: 'merge_request',
       mergeRequest: {
         projectId: p.project.id, iid: mr.iid, title: mr.title, description: mr.description,
-        sourceBranch: mr.source_branch, targetBranch: mr.target_branch, action: mr.action ?? '', authorId: mr.author_id,
+        sourceBranch: mr.source_branch, targetBranch: mr.target_branch, headSha: mr.last_commit?.id ?? '', action: mr.action ?? '', authorId: mr.author_id,
       },
     }
   }
