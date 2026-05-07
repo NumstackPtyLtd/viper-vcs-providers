@@ -1,5 +1,5 @@
 import pino from 'pino'
-import type { VcsProvider, DiffFile, DiffVersion, Discussion, InlineCommentPosition } from '../types.js'
+import type { VcsProvider, DiffFile, DiffVersion, Discussion, InlineCommentPosition, CheckRunParams } from '../types.js'
 
 const log = pino({ name: 'gitlab' })
 
@@ -82,6 +82,23 @@ export class GitLabProvider implements VcsProvider {
     } catch {
       return null
     }
+  }
+
+  async createCheckRun(projectId: number, params: CheckRunParams): Promise<void> {
+    // GitLab uses commit statuses (pipeline-style). Map check run to commit status.
+    const state = params.status === 'in_progress' ? 'running'
+      : params.conclusion === 'success' ? 'success'
+      : params.conclusion === 'failure' ? 'failed'
+      : 'success'
+    await this.request(`/projects/${projectId}/statuses/${params.sha}`, {
+      method: 'POST',
+      body: JSON.stringify({
+        state,
+        name: 'Viper Review',
+        description: params.title,
+        target_url: params.detailsUrl,
+      }),
+    })
   }
 
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
