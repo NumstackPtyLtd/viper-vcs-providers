@@ -72,6 +72,8 @@ export interface VcsProvider {
   getFileContent(projectId: number, filePath: string, ref: string): Promise<string | null>
   /** Create or update a check run on a commit. Used for merge gating. */
   createCheckRun(projectId: number, params: CheckRunParams): Promise<void>
+  /** Build the URL for a merge request / pull request. */
+  getReviewUrl(projectId: number, mrIid: number): string | null
 }
 
 /** Normalized webhook event — VCS-agnostic. */

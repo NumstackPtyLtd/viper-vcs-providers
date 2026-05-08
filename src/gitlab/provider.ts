@@ -101,6 +101,10 @@ export class GitLabProvider implements VcsProvider {
     })
   }
 
+  getReviewUrl(projectId: number, mrIid: number): string | null {
+    return `${this.baseUrl}/${projectId}/-/merge_requests/${mrIid}`
+  }
+
   private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}/api/v4${path}`
     log.debug({ url, method: options.method ?? 'GET' }, 'API request')

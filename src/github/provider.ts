@@ -123,6 +123,11 @@ export class GitHubProvider implements VcsProvider {
     })
   }
 
+  getReviewUrl(projectId: number, mrIid: number): string | null {
+    const repo = this.repoCache.get(projectId)
+    return repo ? `https://github.com/${repo}/pull/${mrIid}` : null
+  }
+
   // --- Repo cache ---
 
   private repoCache = new Map<number, string>()
