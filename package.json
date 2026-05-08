@@ -1,6 +1,6 @@
 {
   "name": "@supaproxy/viper-vcs-providers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "VCS provider plugins for Viper code reviewer",
   "type": "module",
   "main": "dist/index.js",
