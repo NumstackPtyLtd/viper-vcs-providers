@@ -5,10 +5,10 @@
  *   app.route('/', createOAuthRoutes({ registry, getOrgId, onConnection, onRepos }))
  *
  * Routes created:
- *   GET  /api/vcs/oauth/providers       — list OAuth-capable providers
- *   GET  /api/vcs/oauth/:type/install   — redirect URL for the provider
- *   GET  /api/vcs/oauth/:type/callback  — handle the redirect back
- *   GET  /api/vcs/oauth/:type/repos     — list repos for an installation
+ *   GET  /api/vcs/oauth/providers       list OAuth-capable providers
+ *   GET  /api/vcs/oauth/:type/install   redirect URL for the provider
+ *   GET  /api/vcs/oauth/:type/callback  handle the redirect back
+ *   GET  /api/vcs/oauth/:type/repos     list repos for an installation
  */
 import { Hono } from 'hono'
 import type { PluginRegistry } from './registry.js'
