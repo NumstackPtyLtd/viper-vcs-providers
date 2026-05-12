@@ -41,7 +41,7 @@ export interface InlineCommentPosition {
   line: number
 }
 
-/** Check run conclusion — determines merge gating. */
+/** Check run conclusion. Determines merge gating. */
 export type CheckConclusion = 'success' | 'failure' | 'neutral'
 
 /** Check run parameters. */
@@ -60,7 +60,7 @@ export interface CheckRunParams {
   detailsUrl?: string
 }
 
-/** VCS provider operations — the contract adapters implement. */
+/** VCS provider operations: the contract adapters implement. */
 export interface VcsProvider {
   getMergeRequestDiff(projectId: number, mrIid: number): Promise<DiffFile[]>
   getMergeRequestVersion(projectId: number, mrIid: number): Promise<DiffVersion | null>
@@ -76,7 +76,7 @@ export interface VcsProvider {
   getReviewUrl(projectId: number, mrIid: number): string | null
 }
 
-/** Normalized webhook event — VCS-agnostic. */
+/** Normalized webhook event, VCS-agnostic. */
 export interface WebhookEvent {
   kind: 'merge_request' | 'comment'
   mergeRequest?: {
@@ -116,7 +116,7 @@ export interface ConfigField {
   advanced?: boolean
 }
 
-/** VCS Plugin — the contract every VCS provider must implement. */
+/** VCS Plugin: the contract every VCS provider must implement. */
 export interface VcsPlugin {
   readonly type: string
   readonly name: string
